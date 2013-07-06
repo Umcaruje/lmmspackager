@@ -1,8 +1,8 @@
 lmmspackager
 ============
 
-This is a crude Python script that should package LMMS projects with the
-samples it uses, in a zip archive.
+This program packages LMMS projects and the used samples in a zip archive
+for easier sharing.
 
 Requirements:
 * Python 3.3 or later
