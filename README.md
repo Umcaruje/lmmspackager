@@ -17,4 +17,4 @@ Known bugs:
 
 TODO:
 * Support for sample tracks
-* Supports for samples outside LMMS working directory
+* Support for samples outside LMMS working directory
