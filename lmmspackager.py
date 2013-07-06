@@ -74,8 +74,10 @@ for encoding in 'latin-1', 'utf-8', 'ascii', None:
         raise SystemExit("Unable to determine which encoding is used")
 
 
+validauthor = args.author not in ('.', '..', None)
+
 projectname = os.path.splitext(filename)[0]
-where = args.author if args.author else projectname
+where = args.author if validauthor else projectname
 
 
 lmmsrc = os.path.join(os.path.expanduser('~'), '.lmmsrc.xml')
@@ -115,4 +117,4 @@ with tempfile.TemporaryDirectory() as tempdir:
             os.makedirs(projectdir)
         with open(os.path.join(projectdir, filename), mode='a') as mmp:
             mmp.write(dom.toxml())
-    shutil.make_archive('-'.join((args.author, projectname)) if args.author else projectname, 'zip', tempdir, 'lmms')
+    shutil.make_archive('-'.join((where, projectname)) if validauthor else projectname, 'zip', tempdir, 'lmms')
