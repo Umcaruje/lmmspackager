@@ -11,10 +11,6 @@ import sys
 if sys.version_info < (3, 3):
     raise SystemExit('This needs Python 3.3 or newer')
 
-if not sys.platform.startswith('linux'):
-    from warnings import warn
-    warn('Tested on Linux only')
-
 
 import argparse
 
