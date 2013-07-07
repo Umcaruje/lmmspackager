@@ -42,6 +42,7 @@ BUNDLED = (
 ap = argparse.ArgumentParser(description='Package LMMS projects for easy sharing')
 ap.add_argument('file')
 ap.add_argument('--author')
+ap.add_argument('--name')
 ap.add_argument('--lmms', help='path to LMMS binary')
 args = ap.parse_args()
 if not os.path.isfile(args.file):
@@ -58,10 +59,10 @@ if args.file[-1:] == 'z':
     p = subprocess.Popen([lmms, '-d', args.file], stdout=subprocess.PIPE)
     out, err = p.communicate()
     project = out.decode()
-    filename = os.path.basename(args.file)[:-1]
+    filename = args.name + ".mmp" if args.name else os.path.basename(args.file)[:-1]
 else:
     project = open(args.file).read()
-    filename = os.path.basename(args.file)
+    filename = args.name + ".mmp" if args.name else os.path.basename(args.file)
 
 
 for encoding in 'latin-1', 'utf-8', 'ascii', None:
@@ -76,7 +77,7 @@ for encoding in 'latin-1', 'utf-8', 'ascii', None:
 
 validauthor = args.author not in ('.', '..', None)
 
-projectname = os.path.splitext(filename)[0]
+projectname = args.name if args.name else os.path.splitext(filename)[0]
 where = args.author if validauthor else projectname
 
 
