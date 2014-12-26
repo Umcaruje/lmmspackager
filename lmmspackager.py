@@ -18,6 +18,7 @@ import os
 import shutil
 import subprocess
 import zlib
+import zipfile
 
 import xml.dom.minidom
 
@@ -32,10 +33,15 @@ ap.add_argument('file')
 ap.add_argument('--author')
 ap.add_argument('--name')
 ap.add_argument('--unpack', action='store_true')
-ap.add_argument('--mine', action='store_true')
 args = ap.parse_args()
 if not os.path.isfile(args.file):
     raise SystemExit('file {} not found'.format(args.file))
+
+
+lmmsrc = os.path.join(os.path.expanduser('~'), '.lmmsrc.xml')
+with xml.dom.minidom.parse(lmmsrc) as dom:
+    paths = dom.getElementsByTagName('paths')[0]
+    workingdir = paths.attributes['workingdir'].value
 
 
 if not args.unpack:
@@ -60,13 +66,6 @@ if not args.unpack:
 
     projectname = args.name if args.name else os.path.splitext(outfilename)[0]
     where = args.author if validauthor else projectname
-
-
-    lmmsrc = os.path.join(os.path.expanduser('~'), '.lmmsrc.xml')
-    with xml.dom.minidom.parse(lmmsrc) as dom:
-        paths = dom.getElementsByTagName('paths')[0]
-        workingdir = paths.attributes['workingdir'].value
-
 
     with tempfile.TemporaryDirectory() as tempdir:
         projectdir = os.path.join(tempdir, 'lmms', 'projects', where)
@@ -102,4 +101,25 @@ if not args.unpack:
                 mmp.write(dom.toxml())
         shutil.make_archive('-'.join((where, projectname)) if validauthor else projectname, 'zip', tempdir, 'lmms')
 else:
-    raise NotImplementedError(args.mine)
+    home = os.path.abspath(os.path.join(workingdir, '..'))
+    with zipfile.ZipFile(args.file) as z:
+        equal, different = [], []
+        for fname in z.namelist():
+            file = os.path.join(home, fname)
+            if os.path.exists(file):
+                with open(file, 'rb') as f:
+                    (equal if z.getinfo(fname).CRC == zlib.crc32(f.read()) else different).append(fname)
+        if len(equal + different):
+            if len(different):
+                print('\nThe following files would be replaced by different ones:')
+            for f in different:
+                print(' ', f)
+
+            if len(equal):
+                print('\nThese files exist already and seem equal:')
+            for f in equal:
+                print(' ', f)
+        if input('\nExtract and overwrite? [y/N] ').lower().startswith('y') or not len(equal + different):
+            z.extractall(home)
+        else:
+            print('Giving up.')
