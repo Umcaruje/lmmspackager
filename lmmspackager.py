@@ -17,6 +17,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import zlib
 
 import xml.dom.minidom
 
@@ -32,7 +33,6 @@ ap.add_argument('--author')
 ap.add_argument('--name')
 ap.add_argument('--unpack', action='store_true')
 ap.add_argument('--mine', action='store_true')
-ap.add_argument('--lmms', help='path to LMMS binary')
 args = ap.parse_args()
 if not os.path.isfile(args.file):
     raise SystemExit('file {} not found'.format(args.file))
@@ -40,43 +40,34 @@ if not os.path.isfile(args.file):
 
 if not args.unpack:
     if args.file[-1:] == 'z':
-        if args.lmms:
-            lmms = args.lmms
-        else:
-            lmms = shutil.which('lmms')
-        if lmms is None:
-            raise SystemExit('LMMS is needed for reading decompressed project file')
-        p = subprocess.Popen([lmms, '-d', args.file], stdout=subprocess.PIPE)
-        out, err = p.communicate()
-        project = out.decode()
-        filename = args.name + ".mmp" if args.name else os.path.basename(args.file)[:-1]
+        project = zlib.decompress(open(args.file, 'rb').read()[4:])
+        outfilename = args.name + ".mmp" if args.name else os.path.basename(args.file)[:-1]
     else:
         project = open(args.file).read()
-        filename = args.name + ".mmp" if args.name else os.path.basename(args.file)
-    
-    
-    for encoding in 'latin-1', 'utf-8', 'ascii', None:
-        try:
-            project = project.encode(encoding).decode()
-            break
-        except UnicodeDecodeError:
-            pass
-        except TypeError:
-            raise SystemExit("Unable to determine which encoding is used")
-    
-    
+        outfilename = args.name + ".mmp" if args.name else os.path.basename(args.file)
+
+        for encoding in 'latin-1', 'utf-8', 'ascii', None:
+            try:
+                project = project.encode(encoding).decode()
+                break
+            except UnicodeDecodeError:
+                pass
+            except TypeError:
+                raise SystemExit("Unable to determine which encoding is used")
+
+
     validauthor = args.author not in ('.', '..', None)
-    
-    projectname = args.name if args.name else os.path.splitext(filename)[0]
+
+    projectname = args.name if args.name else os.path.splitext(outfilename)[0]
     where = args.author if validauthor else projectname
-    
-    
+
+
     lmmsrc = os.path.join(os.path.expanduser('~'), '.lmmsrc.xml')
     with xml.dom.minidom.parse(lmmsrc) as dom:
         paths = dom.getElementsByTagName('paths')[0]
         workingdir = paths.attributes['workingdir'].value
-    
-    
+
+
     with tempfile.TemporaryDirectory() as tempdir:
         projectdir = os.path.join(tempdir, 'lmms', 'projects', where)
         sampledir = os.path.join(tempdir, 'lmms', 'samples', where)
@@ -107,7 +98,7 @@ if not args.unpack:
                     shutil.copyfile(source, target)
             if not os.path.exists(projectdir):
                 os.makedirs(projectdir)
-            with open(os.path.join(projectdir, filename), mode='a') as mmp:
+            with open(os.path.join(projectdir, outfilename), mode='a') as mmp:
                 mmp.write(dom.toxml())
         shutil.make_archive('-'.join((where, projectname)) if validauthor else projectname, 'zip', tempdir, 'lmms')
 else:
