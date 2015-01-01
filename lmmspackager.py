@@ -119,7 +119,7 @@ else:
                 print('\nThese files exist already and seem equal:')
             for f in equal:
                 print(' ', f)
-        if input('\nExtract and overwrite? [y/N] ').lower().startswith('y') or not len(equal + different):
+        if not len(equal + different) input('\nExtract and overwrite? [y/N] ').lower().startswith('y'):
             z.extractall(home)
         else:
             print('Giving up.')
