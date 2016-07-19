@@ -101,25 +101,4 @@ if not args.unpack:
                 mmp.write(dom.toxml())
         shutil.make_archive('-'.join((where, projectname)) if validauthor else projectname, 'zip', tempdir, 'lmms')
 else:
-    home = os.path.abspath(os.path.join(workingdir, '..'))
-    with zipfile.ZipFile(args.file) as z:
-        equal, different = [], []
-        for fname in z.namelist():
-            file = os.path.join(home, fname)
-            if os.path.exists(file):
-                with open(file, 'rb') as f:
-                    (equal if z.getinfo(fname).CRC == zlib.crc32(f.read()) else different).append(fname)
-        if len(equal + different):
-            if len(different):
-                print('\nThe following files would be replaced by different ones:')
-            for f in different:
-                print(' ', f)
-
-            if len(equal):
-                print('\nThese files exist already and seem equal:')
-            for f in equal:
-                print(' ', f)
-        if not len(equal + different) input('\nExtract and overwrite? [y/N] ').lower().startswith('y'):
-            z.extractall(home)
-        else:
-            print('Giving up.')
+    raise NotImplementedError
